@@ -98,7 +98,7 @@ latlongtown = read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION/SELECTI
 gglow2 = plotancestryregion(gglow)
 gghigh2 = plotancestryregion(gghigh)
 gg2 =plotancestryregion(gg)
-##########################################Locality opening
+##########################################Locality opening : gif
 ##########################################
 i = 1850
 quebec <-get_map(location = c(lon = -70.270386,lat =  47.591346),zoom =6, scale = 2, maptype = "satellite")
@@ -153,6 +153,7 @@ j = j +1
   }
 })
 
+###Just one picture
 locop <-ggmap(quebec) + geom_point(data = toto ,aes(y=lat,x=lon , color = periode))+ 
   ggtitle(paste("Opened localities until year",i))+scale_colour_manual(name="Time periods",values=colpal[1:j])+
   guides(colour=guide_legend(override.aes=list(size=10)))+

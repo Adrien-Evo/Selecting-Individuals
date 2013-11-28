@@ -1,39 +1,26 @@
 library(ggplot2)
 library(plyr)
 library(MASS)
-
-library(VennDiagram)
 library(grid)
+library(VennDiagram)
 library(RgoogleMaps)
 library(ggmap)
 library(ggplot2)
 library(lattice)
-library(grid)
 
 par(mar=c(5.1,4.1,4.1,2.1))
-
+###TESTING PURPOSE
+args  = NULL
+args[1] = "param-3.txt"
+################"
 
 args <- commandArgs(trailingOnly = TRUE)
 
 
-##Setting the output directory
-
-splitlist = strsplit(args[1],"/")[[1]][length(strsplit(args[1],"/")[[1]])]
-dirname = strsplit(splitlist,"[.]")[[1]][1]
-
-print(paste("Creation of the output directory :",dirname))
-dir.create(paste("./",dirname,"-output", sep = ""))
-setwd(paste("./",dirname,"-output", sep = ""))
-
-
-
-
-##Setting the Log file
-write("Selection steps\n###############\n###############",file = "LOG.txt")
 
 ###Settings the parameters
 print("Reading arguments from parameters file")
-parameters = read.table(args[1], h = F, row.names = 1 , sep = "=")
+parameters = read.table(paste("./",args[1],sep = ""), h = F, row.names = 1 , sep = "=")
 
 meandepth1 = parameters["meandepth1",]
 meandepth2 = parameters["meandepth2",]
@@ -49,12 +36,26 @@ ccwfi_2 = parameters["ccwfi_2",]
 nbwfi_1 =parameters["nbwfi_1",]
 nbwfi_2 = parameters["nbwfi_2",]
 
+##Setting the output directory
+splitlist = strsplit(args[1],"/")[[1]][length(strsplit(args[1],"/")[[1]])]
+dirname = strsplit(splitlist,"[.]")[[1]][1]
 
+print(paste("Creation of the output directory :",dirname))
+dir.create(paste("./",dirname,"-output", sep = ""))
+setwd(paste("./",dirname,"-output", sep = ""))
+
+##Setting the Log file
+write("Selection steps\n###############\n###############",file = "LOG.txt")
+######Start of analysis
 
 StartInd <- read.delim("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//scripts/BuildGen/output_files/info-added-info-on-nb-of-WFI.info")
 
 per =length(which(StartInd$maxDepth == 15))+ length(which(StartInd$maxDepth == 12)) + length(which(StartInd$maxDepth == 14)) +length(which(StartInd$maxDepth == 13))
 per = 100*per/dim(StartInd)[1] 
+
+#####Total Inbreeding coefficient
+inb = read.table(row.names = 1,"~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//Data_files/Inbreeding-coefficient-3916.txt")
+StartInd$Inbreeding = inb$V2
 
 #Graph avec les densités de WFI pour différentes profondeurs de 11 à 15
 Start16 <- StartInd[which(StartInd$maxDepth == 16),]
@@ -117,7 +118,12 @@ select_the_boys <-function(dff2,meandepth1,meandepth2,CC6,CC12_1,CC12_2){
 boys1 =   select_the_boys(dff2,meandepth1,meandepth2,seuil,CC12_1,CC12_2) 
 
 
-
+power2 = c(126,254,510,1022,2046,4094,8190)
+mean(boys$nb_wfi_7/(2**7))
+mean(boys$nb_wfi_8/(2**8))
+mean(boys$nb_wfi_9/(2**9))
+mean(boys$nb_wfi_10/(2**10))
+mean(boys$nb_wfi_11/(2**11))
 
 
 boys = boys1[which(boys1$wfi_completeness_6==1),]
@@ -252,6 +258,8 @@ dens_wfi_final = ggplot(common,aes(x = cWFI_no_default,fill =as.factor(cond))) +
 jpeg("./cWFI_distribution_final.jpg",width = 600, height = 600)
 print(dens_wfi_final)
 dev.off()
+
+#print(str(common))
 #########
 ########
 #######
@@ -272,6 +280,7 @@ checkwilcox = function(df,variable){
 
 
 
+checkwilcox(common,'Inbreeding')
 
 
 
@@ -279,7 +288,36 @@ write.table(row.names(common[which(common$cond == "Low cWFI"),]),"LOW-indiv",quo
 write.table(row.names(common[which(common$cond == "High cWFI"),]),"HIGH-indiv",quote = F,row.names = F, col.names = F)
 write.table(row.names(common),"COMMON",quote = F,row.names = F, col.names = F)
 
+##############################
+##############################Kinship computation :
+
+#cmd <-"python ~/PROJECTS/RANGE\\ EXPANSION\\ IN\\ HUMAN\\ POPULATION/SELECTING\\ GENEALOGIES/scripts/Python/Merge-Pedigree.py COMMON"
+
+#system(cmd)
+
+#####################"
+####################"Kinship matrix between groups
 
 
+lowremove = read.table("LOWREMOVE")
+highremove = read.table("HIGHREMOVE")
+write(paste("Removing individuals with the highest kinship:",length(lowremove), 'of Low cWFI and',length(highremove),'of High cWFI'),file = "LOG.txt",append = TRUE)
 
+common1 = common[!rownames(common) %in% as.character(lowremove$V1),]
+dim(common1)
+common2 = common1[!rownames(common1) %in% as.character(highremove$V1),]
+dim(common2)
+
+nblow = length(which(common2$cond == "Low cWFI"))-60
+nbhigh = length(which(common2$cond == "High cWFI"))-60
+
+write(paste("Removing individuals to have 60 60 with extrem values :", nblow,"low cWFI and",nbhigh,"high cWFI to remove"),file = "LOG.txt",append = TRUE)
+
+low.df = common2[which(common2$cond == "Low cWFI"),]
+high.df = common2[which(common2$cond == "High cWFI"),]
+
+low.df = low.df[order(low.df$cWFI),]
+high.df = high.df[order(high.df$cWFI),]
+low.df.final = low.df[1:(length(which(common2$cond == "Low cWFI"))-nblow),]
+high.df.final = high.df[(nbhigh+1):(length(which(common2$cond == "High cWFI"))),]
 

@@ -2,14 +2,15 @@ library(ggplot2)
 library(plyr)
 library(MASS)
 library(rgl)
-library(VennDiagram)
 library(grid)
+library(VennDiagram)
+
 library(plotGoogleMaps)
 library(RgoogleMaps)
 library(ggmap)
 library(ggplot2)
 library(lattice)
-library(grid)
+
 par(mar=c(5.1,4.1,4.1,2.1))
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
 
@@ -73,15 +74,15 @@ a2 <-  ggplot(dat,aes(x=nb_wfi_12)) + geom_histogram(aes(y = ..density.., fill =
 
 
 select_the_boys <-function(dff2,meandepth1,meandepth2,CC6,CC12_1,CC12_2){
-  jpeg("./figure2/cc6.jpg",width = 600, height = 600)
+
   print(ggplot(dff2,aes(x=as.factor(maxDepth),y = Completeness_6,fill = as.factor(maxDepth))) + geom_violin(scale = "count")+
           scale_fill_discrete(name = "Maximum\n depth") + geom_hline(yintercept = CC6, col = "red",linetype = "dashed",size = 3)+
           scale_x_discrete(name = "") + scale_y_continuous(name = "Completeness at depth 6") +  
           theme(axis.text.x = element_text(size=18),axis.title.x = element_text(size=30),
                 axis.text.y = element_text(size=18),axis.title.y = element_text(size=30),
                 legend.text = element_text(size=20),legend.title = element_text(size=20)))
-  dev.off()
-  jpeg("./figure2/mgd.jpg",width = 600, height = 600)
+ 
+
   print(ggplot(dff2,aes(x=as.factor(maxDepth),y = meanGenDepth,fill = as.factor(maxDepth))) + geom_violin(scale = "count")+
           geom_hline(yintercept = meandepth1, col = "red",linetype = "dashed",size = 3)+geom_hline(yintercept = meandepth2, col = "red",linetype = "dashed",size = 3)+ 
          # stat_summary(fun.y = mean, geom = "point", color = "black", fill = "black", pch = 21, size = 2) +
@@ -91,8 +92,8 @@ select_the_boys <-function(dff2,meandepth1,meandepth2,CC6,CC12_1,CC12_2){
           theme(axis.text.x = element_text(size=18),axis.title.x = element_text(size=30),
                 axis.text.y = element_text(size=18),axis.title.y = element_text(size=30),
                 legend.text = element_text(size=20),legend.title = element_text(size=20)))
-  dev.off()
-  jpeg("./figure2/cc12.jpg",width = 600, height = 600)
+
+
   print( ggplot(dff2,aes(x=as.factor(maxDepth),y = Completeness_12,fill = as.factor(maxDepth))) + geom_violin(scale = "count") +
            geom_hline(yintercept = CC12_2, col = "red",linetype = "dashed",size = 3) + geom_hline(yintercept = CC12_1, col = "red",linetype = "dashed",size = 3) +
            scale_fill_discrete(name = "Maximum\n depth") +
@@ -101,7 +102,7 @@ select_the_boys <-function(dff2,meandepth1,meandepth2,CC6,CC12_1,CC12_2){
                  axis.text.y = element_text(size=18),axis.title.y = element_text(size=30),
                  legend.text = element_text(size=20),legend.title = element_text(size=20))
            )
-  dev.off()
+
   
   subset  =intersect(which(dff2$meanGenDepth > meandepth1),which(dff2$meanGenDepth < meandepth2))
   print(length(subset))
@@ -178,6 +179,14 @@ ComputeCompletenessAtDepth <-function(datadata){
 dim(boys1)
 boys = boys1[which(boys1$wfi_completeness_6==1),]
 dim(boys)
+inbreeding = read.table("../../Python/1558-Inbreeding-Coefficient", sep = " ", row.name = 1)
+boys$inbreeding = inbreeding$V2
+F.lm = lm(inbreeding~cWFI, data = boys)
+plot(inbreeding~cWFI, data = boys, pch = 15, cex = 0.5, ylab = "Inbreeding Coefficient", xlab = "Cumulated WFI")
+abline(F.lm, col = "red", lwd = 2)
+F.lmr =rstudent(F.lm)
+plot(F.lmr,pch = 15, cex = 0.5)
+
 FIRSTQUANTILE = 3
 LASTQUANTILE = 18
 
@@ -345,7 +354,26 @@ checkwilcox(common,"nb_wfi_10")
 checkwilcox(common,"nb_wfi_11")
 checkwilcox(common,"nb_wfi_12.1")
 
+##############################
+##############################INBREEDING
 
+inbreed = read.table("~/Downloads/RE__Selection_of_the_individuals/p2013_135_Fs.csv", sep = "\t", h = T, row.names = 1)
+inbreed
+common$gen6 = inbreed$GEN6
+common$gen12 = inbreed$GEN12
+common$gen20 = inbreed$GEN20
+
+ggplot(common, aes(y = gen20,x = cond, fill = cond),environment = environment()) + geom_violin()+
+  scale_fill_discrete(name = "Types of cWFI") +
+  scale_x_discrete(name = "cWFI") +scale_y_continuous(name = "Inbreeding_6")+  
+  theme(axis.text.x = element_text(size=18),axis.title.x = element_text(size=30),
+        axis.text.y = element_text(size=18),axis.title.y = element_text(size=30),
+        legend.text = element_text(size=20),legend.title = element_text(size=20),
+        plot.title = element_text(size=20))
+
+row.names(common)
+##############################
+##############################
 
 #################################LOCATION
 ###############################"
@@ -400,6 +428,51 @@ x= as.matrix(x)
 return(x)
 }
 col.l <- colorRampPalette(c( rgb(5, 48, 97, max = 255),rgb(146, 197, 222,max = 255),rgb(247, 247, 247,max = 255),rgb(244, 165, 130,max = 255),rgb(103, 0, 31, max = 255)))(30)
+
+#########################
+#########################SELECTION OF FINALE STUFF
+
+highmat = read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION/SELECTING GENEALOGIES/scripts/R-scripts/Selecting-Individuals//param-3-output/High-kinship",
+                     sep = ' ',row.names = 1, na.string = "NA")
+lowmat = read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION/SELECTING GENEALOGIES/scripts/R-scripts/Selecting-Individuals//param-3-output/LOW-kinship",
+                    sep = ' ',row.names = 1,na.string = "NA")
+high = plotmat(highmat)
+low = plotmat(lowmat)
+
+repair = read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//scripts//Python//outputtemp", sep = " ")
+lowrepair = intersect(row.names(lowmat),as.character(repair$V2))
+lowrep = repair[which(as.character(repair$V2) %in% lowrepair),]
+highrepair = intersect(row.names(highmat),as.character(repair$V2))
+highrep = repair[which(as.character(repair$V2) %in% highrepair),]
+
+out = NULL
+for(i in seq(1,dim(lowrep)[1])){
+low[as.character(lowrep$V2[i]),as.character(lowrep$V3[i])]  = lowrep$V1[i]
+}
+out
+for(i in seq(1,dim(highrep)[1])){
+  high[as.character(highrep$V2[i]),as.character(highrep$V3[i])]  = highrep$V1[i]
+}
+
+high[which(high == 0.5)] = rep(0,length(high[which(high == 0.5)]))
+low[which(low == 0.5)] = rep(0,length(low[which(low == 0.5)]))
+
+levelplot(high,ylab = '',col.regions = col.l, xaxt='n',xlab = "", ann=FALSE,yaxt = "n", main = " KINSHIP HIGH cWFI")
+
+levelplot(low,ylab = '',col.regions = col.l,xaxt='n',xlab = "", ann=FALSE,yaxt = "n", main = " KINSHIP LOW cWFI")
+
+
+length(unique(rownames(which(low>0.005 ,arr.ind = TRUE))))
+
+length(unique(rownames(which(high>0.015 ,arr.ind = TRUE))))
+
+lowremove = unique(rownames(which(low>0.005 ,arr.ind = TRUE)))
+highremove = unique(rownames(which(high>0.015 ,arr.ind = TRUE)))
+write(lowremove,"LOWREMOVE")
+write(highremove,"HIGHREMOVE")
+###########################################"""
+
+
 
 levelplot(plotmat(cc),ylab = '',col.regions = col.l, main = " % of Common ancestors of selected individuals")
 levelplot(plotmat(lowrecent),ylab = '',col.regions = col.l, main = "Recent Common ancestors of Low cWFI individuals")

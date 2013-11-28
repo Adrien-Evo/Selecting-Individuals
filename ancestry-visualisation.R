@@ -3,8 +3,8 @@ library(pedigree)
 #reading of the counted individuals in genealogy
 gg=read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//scripts/BuildGen/output_files/ancestries/237329_Ancestors.txt",sep = '\t',h=T)
 ###########################TEST DE SA MERE
-gg=read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//scripts/BuildGen/output_files/ancestries/725427_Ancestors.txt",sep = '\t',h=T)
-gg2=read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//scripts/BuildGen/output_files/ancestries/721254_Ancestors.txt",sep = '\t',h=T)
+gg=read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//scripts/BuildGen/output_files/ancestries_simple_truncated_6//722860_Ancestors.txt",sep = ' ')
+gg2=read.table("~/PROJECTS/RANGE EXPANSION IN HUMAN POPULATION//SELECTING GENEALOGIES//scripts/BuildGen/output_files/ancestries_simple_truncated//722860_Ancestors.txt",h = T,sep = ' ')
 
 levels(gg$sex) <-c("F","H","1","2")
 gg$sex = replace(gg$sex,which(gg$sex == "F"),"2")
@@ -24,15 +24,20 @@ lulu = NULL
 lulu = rbind(lulu,gg2)
 lulu = rbind(lulu,gg)
 
-ped <- pedigree(id=lulu$ind,dadid=lulu$dad,momid= lulu$mom, sex = lulu$sex)
+ped <- pedigree(id=lulu$V1,dadid=lulu$V3,momid= lulu$V2)
 
 
-ggsimple = gg[,names(gg) %in% c("ind","dad","mom")]
-ggsimple = data.frame(id = ggsimple$ind, dam = ggsimple$mom, sire  = ggsimple$dad)
-ggsimpleord = orderPed(ggsimple)
-F = calcInbreeding(ggsimple[ggsimpleord,])
+ggsimple = gg[,names(gg) %in% c("ind","dad","mom", "sex")]
+ggsimple = data.frame(id = ggsimple$ind, dam = ggsimple$mom, sire  = ggsimple$dad, sex = ggsimple$sex )
+ggsimpleord = orderPed(gg2)
+gg2 = gg2[ggsimpleord,]
+pedsimple <- pedigree(id=ggsimple$id,dadid=ggsimple$sire,momid= ggsimple$dam,sex = ggsimple$sex)
+ggsimple = ggsimple[,names(ggsimple) %in% c("id","sire","dam")]
+write.table(file = "PED.ped", ggsimple, quote = F, row.names = F)
 
-ped <- pedigree(id=gg$ind,dadid=gg$dad,momid= gg$mom, sex = gg$sex)
+F = calcInbreeding(gg2)
+
+ped <- pedigree(id=gg2$id,dadid=gg2$dad,momid= gg2$mom, sex = gg2$sex)
 
 #reordering of the dataframe to match the order of the tree
 cc <-sapply(ped$id,function(x) which(x ==gg2$ind))
